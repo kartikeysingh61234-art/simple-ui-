@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskAPI Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root {
+  --bg: #ffffff;
+  --bg2: #f7f7f5;
+  --bg3: #f0efec;
+  --text: #1a1a18;
+  --text2: #6b6b66;
+  --text3: #a0a09a;
+  --border: #e4e4df;
+  --border2: #d0d0ca;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'SF Mono', 'Fira Code', Consolas, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: var(--font); font-size: 14px; color: var(--text); background: var(--bg3); }
+input, select, button { font-family: var(--font); }
+
+/* ── Auth ── */
+.auth-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem 1rem; background: var(--bg3); }
+.auth-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; width: 100%; max-width: 380px; }
+.auth-card h2 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+.auth-subtitle { font-size: 13px; color: var(--text2); margin-bottom: 1.5rem; }
+.field { margin-bottom: 1rem; }
+.field label { display: block; font-size: 11px; color: var(--text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; font-weight: 500; }
+.field input, .field select { width: 100%; padding: 8px 10px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); font-size: 14px; outline: none; transition: border-color .15s; }
+.field input:focus, .field select:focus { border-color: #888; box-shadow: 0 0 0 3px rgba(0,0,0,.06); }
+.btn-primary { width: 100%; padding: 9px; background: #1a1a18; color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity .15s; }
+.btn-primary:hover { opacity: .85; }
+.btn-sm { background: transparent; border: 1px solid var(--border2); color: var(--text); border-radius: var(--radius); padding: 6px 13px; font-size: 12px; cursor: pointer; }
+.btn-sm:hover { background: var(--bg2); }
+.toggle-link { text-align: center; margin-top: 1rem; font-size: 13px; color: var(--text2); }
+.toggle-link span { color: var(--text); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.alert { padding: 9px 12px; border-radius: var(--radius); font-size: 13px; margin-bottom: 1rem; display: none; }
+.alert.error { background: #fff0f0; color: #c0392b; border: 1px solid #f5c6c6; }
+.alert.success { background: #f0faf5; color: #1a7a4a; border: 1px solid #b2e0c8; }
+.demo-row { display: flex; gap: 8px; margin-top: 8px; }
+.demo-row button { flex: 1; }
+.divider { border-top: 1px solid var(--border); margin: 1.25rem 0 1rem; }
+.divider-label { font-size: 11px; color: var(--text3); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .05em; }
+
+/* ── App shell ── */
+.app { display: none; flex-direction: column; height: 100vh; overflow: hidden; }
+.app.active { display: flex; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 1.25rem; height: 52px; border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.logo { font-size: 15px; font-weight: 600; }
+.ver-badge { font-size: 10px; background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; color: var(--text3); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.user-chip { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); }
+.role-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.role-badge.admin { background: #eeedfe; color: #3c3489; }
+.role-badge.user { background: #e1f5ee; color: #085041; }
+.dash-body { display: flex; flex: 1; overflow: hidden; }
+.sidebar { width: 188px; border-right: 1px solid var(--border); background: var(--bg); padding: 12px 0; flex-shrink: 0; overflow-y: auto; }
+.nav-section { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); padding: 12px 16px 4px; font-weight: 500; }
+.nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 13px; color: var(--text2); cursor: pointer; transition: all .1s; border-radius: 0; }
+.nav-item:hover { background: var(--bg2); color: var(--text); }
+.nav-item.active { background: var(--bg2); color: var(--text); font-weight: 500; }
+.nav-item i { font-size: 15px; }
+.main { flex: 1; padding: 1.5rem; overflow-y: auto; background: var(--bg3); }
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── Stats ── */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+.stat-card { background: var(--bg2); border-radius: var(--radius); padding: 1rem; }
+.stat-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; font-weight: 500; }
+.stat-value { font-size: 26px; font-weight: 600; color: var(--text); }
+
+/* ── Section header ── */
+.sec-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.sec-header h3 { font-size: 15px; font-weight: 600; }
+.btn-add { display: flex; align-items: center; gap: 5px; padding: 7px 13px; background: #1a1a18; color: #fff; border: none; border-radius: var(--radius); font-size: 12px; font-weight: 500; cursor: pointer; }
+.btn-add:hover { opacity: .85; }
+
+/* ── Table ── */
+.tbl-wrap { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.tbl-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl-wrap th { padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text2); border-bottom: 1px solid var(--border); font-weight: 500; }
+.tbl-wrap td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.tbl-wrap tr:last-child td { border-bottom: none; }
+.tbl-wrap tr:hover td { background: var(--bg2); }
+.priority-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.p-high { background: #faece7; color: #993c1d; }
+.p-medium { background: #faeeda; color: #854f0b; }
+.p-low { background: #eaf3de; color: #3b6d11; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+.s-done { background: #1d9e75; }
+.s-prog { background: #ef9f27; }
+.s-todo { background: #aaa; }
+.action-btns { display: flex; gap: 6px; }
+.btn-icon { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 4px 7px; cursor: pointer; color: var(--text2); font-size: 13px; }
+.btn-icon:hover { background: var(--bg2); color: var(--text); }
+.btn-icon.del:hover { background: #fff0f0; color: #c0392b; border-color: #f5c6c6; }
+
+/* ── Filters ── */
+.filter-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+.filter-row input, .filter-row select { padding: 7px 10px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); font-size: 13px; outline: none; }
+.filter-row input { flex: 1; }
+.filter-row input:focus, .filter-row select:focus { border-color: #888; }
+
+/* ── Modal ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: center; justify-content: center; z-index: 100; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--bg); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 1.5rem; width: 360px; max-width: 95vw; }
+.modal h3 { font-size: 15px; font-weight: 600; margin-bottom: 1rem; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.25rem; }
+
+/* ── API Docs ── */
+.api-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 8px; overflow: hidden; }
+.api-hdr { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; }
+.api-hdr:hover { background: var(--bg2); }
+.method { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; min-width: 46px; text-align: center; }
+.m-get { background: #e1f5ee; color: #085041; }
+.m-post { background: #eeedfe; color: #3c3489; }
+.m-put { background: #faeeda; color: #854f0b; }
+.m-delete { background: #faece7; color: #993c1d; }
+.api-path { font-size: 13px; font-family: var(--mono); color: var(--text); }
+.api-desc { font-size: 12px; color: var(--text2); margin-left: auto; }
+.auth-chip { font-size: 10px; background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; color: var(--text3); }
+.api-body { padding: 0 14px 12px; border-top: 1px solid var(--border); display: none; }
+.api-body.open { display: block; }
+.api-body pre { font-size: 11px; font-family: var(--mono); background: var(--bg2); padding: 10px; border-radius: 6px; margin-top: 10px; overflow-x: auto; color: var(--text2); line-height: 1.6; }
+.param-row { display: flex; gap: 12px; font-size: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.param-row:last-child { border-bottom: none; }
+.param-name { font-family: var(--mono); color: var(--text); min-width: 90px; }
+.param-type { color: var(--text3); min-width: 55px; }
+
+/* ── Security ── */
+.sec-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+.sec-card h4 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text2); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.token-display { font-size: 11px; font-family: var(--mono); background: var(--bg2); padding: 10px; border-radius: 6px; word-break: break-all; line-height: 1.7; }
+.tp-h { color: #534ab7; }
+.tp-p { color: #0f6e56; }
+.tp-s { color: #993c1d; }
+.info-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.info-row:last-child { border-bottom: none; }
+.info-key { color: var(--text2); }
+.checks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.check-item { font-size: 12px; padding: 8px; background: var(--bg2); border-radius: 6px; display: flex; align-items: center; gap: 5px; }
+.check-item i { color: #1d9e75; font-size: 14px; }
+.scale-note { font-size: 12px; color: var(--text2); line-height: 1.8; }
+.scale-note strong { font-weight: 600; color: var(--text); }
+
+/* ── Schema ── */
+.schema-block { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+.schema-block h4 { font-size: 13px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
+.schema-block pre { font-size: 11px; font-family: var(--mono); color: var(--text2); line-height: 1.8; }
+
+/* ── JWT info box ── */
+.info-box { padding: 1rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); font-size: 12px; color: var(--text2); line-height: 1.75; margin-top: 1rem; }
+.info-box strong { font-weight: 600; color: var(--text); }
+code { font-size: 11px; background: var(--bg2); padding: 1px 5px; border-radius: 3px; font-family: var(--mono); }
+
+/* ── Toast ── */
+.toast { position: fixed; bottom: 24px; right: 24px; background: #1a1a18; color: #fff; padding: 10px 16px; border-radius: var(--radius); font-size: 13px; z-index: 200; opacity: 0; transform: translateY(6px); transition: all .2s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-card">
+    <h2 id="auth-title">Sign in</h2>
+    <p class="auth-subtitle" id="auth-subtitle">JWT-secured authentication · API v1</p>
+    <div class="alert error" id="auth-error"></div>
+    <div class="alert success" id="auth-success"></div>
+    <div class="field" id="field-name" style="display:none">
+      <label>Full name</label>
+      <input type="text" id="reg-name" placeholder="Alex Johnson">
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="auth-email" placeholder="you@example.com">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="Min. 8 characters">
+    </div>
+    <div class="field" id="field-role" style="display:none">
+      <label>Role</label>
+      <select id="reg-role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="handleAuth()" id="auth-btn">Sign in</button>
+    <div class="toggle-link"><span id="toggle-text" onclick="toggleMode()">Don't have an account? Register</span></div>
+    <div class="divider"></div>
+    <p class="divider-label">Quick demo login</p>
+    <div class="demo-row">
+      <button class="btn-sm" onclick="quickLogin('admin@app.dev','Admin123!')">Admin demo</button>
+      <button class="btn-sm" onclick="quickLogin('user@app.dev','User123!')">User demo</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <i class="ti ti-layers-subtract" style="font-size:18px"></i>
+      <span class="logo">TaskAPI</span>
+      <span class="ver-badge">v1.0</span>
+    </div>
+    <div class="topbar-right">
+      <div class="user-chip">
+        <i class="ti ti-user-circle" style="font-size:16px"></i>
+        <span id="topbar-name">—</span>
+        <span class="role-badge" id="topbar-role">user</span>
+      </div>
+      <button class="btn-sm" onclick="logout()"><i class="ti ti-logout" style="font-size:13px;vertical-align:-1px"></i> Sign out</button>
+    </div>
+  </div>
+  <div class="dash-body">
+    <div class="sidebar">
+      <div class="nav-section">Menu</div>
+      <div class="nav-item active" onclick="showPage('overview',this)"><i class="ti ti-layout-dashboard"></i> Overview</div>
+      <div class="nav-item" onclick="showPage('tasks',this)"><i class="ti ti-checklist"></i> Tasks</div>
+      <div class="nav-item" onclick="showPage('apidocs',this)"><i class="ti ti-book-2"></i> API docs</div>
+      <div class="nav-item" onclick="showPage('security',this)"><i class="ti ti-shield-check"></i> Security</div>
+      <div class="nav-section admin-only" id="adm-section" style="display:none">Admin</div>
+      <div class="nav-item admin-only" id="adm-users-nav" style="display:none" onclick="showPage('users',this)"><i class="ti ti-users"></i> Users</div>
+      <div class="nav-item admin-only" id="adm-schema-nav" style="display:none" onclick="showPage('schema',this)"><i class="ti ti-database"></i> DB Schema</div>
+    </div>
+    <div class="main">
+
+      <!-- Overview -->
+      <div class="page active" id="page-overview">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Total tasks</div><div class="stat-value" id="st-total">0</div></div>
+          <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" id="st-done">0</div></div>
+          <div class="stat-card"><div class="stat-label">In progress</div><div class="stat-value" id="st-prog">0</div></div>
+          <div class="stat-card"><div class="stat-label">Users</div><div class="stat-value" id="st-users">3</div></div>
+        </div>
+        <div class="sec-header"><h3>Recent activity</h3></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Task</th><th>Priority</th><th>Status</th><th>Assigned</th></tr></thead>
+          <tbody id="recent-tbody"></tbody>
+        </table></div>
+        <div class="info-box"><strong>JWT flow:</strong> On login the server hashes the password with bcrypt (cost 10), verifies credentials, and returns a signed JWT (HS256, 24 h expiry). Each protected API call sends <code>Authorization: Bearer &lt;token&gt;</code>. Middleware verifies signature and role claims before allowing access.</div>
+      </div>
+
+      <!-- Tasks -->
+      <div class="page" id="page-tasks">
+        <div class="sec-header">
+          <h3>Tasks <span id="task-count" style="font-size:12px;color:#888;font-weight:400"></span></h3>
+          <button class="btn-add" onclick="openCreate()"><i class="ti ti-plus" style="font-size:13px"></i> New task</button>
+        </div>
+        <div class="filter-row">
+          <input type="text" id="search" placeholder="Search tasks…" oninput="renderTasks()">
+          <select id="f-status" onchange="renderTasks()">
+            <option value="">All statuses</option>
+            <option value="todo">To do</option>
+            <option value="in-progress">In progress</option>
+            <option value="done">Done</option>
+          </select>
+          <select id="f-priority" onchange="renderTasks()">
+            <option value="">All priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Title</th><th>Priority</th><th>Status</th><th>Assigned</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody id="tasks-tbody"></tbody>
+        </table></div>
+      </div>
+
+      <!-- API Docs -->
+      <div class="page" id="page-apidocs">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h3 style="font-size:15px;font-weight:600">API documentation <span style="font-size:12px;color:#888;font-weight:400">— REST / OpenAPI 3.0</span></h3>
+          <span style="font-size:11px;background:#f0efec;border:1px solid #e4e4df;border-radius:4px;padding:3px 8px;color:#888">Base URL: /api/v1</span>
+        </div>
+        <p style="font-size:12px;color:#888;margin-bottom:1rem">Click any endpoint to expand parameters and response schema.</p>
+        <div id="api-list"></div>
+      </div>
+
+      <!-- Security -->
+      <div class="page" id="page-security">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:1rem">Security details</h3>
+        <div class="sec-card">
+          <h4><i class="ti ti-key" style="font-size:14px"></i> Current JWT token</h4>
+          <div class="token-display" id="token-display">—</div>
+          <p style="font-size:11px;color:#aaa;margin-top:6px">Purple = header · Green = payload · Orange = signature</p>
+        </div>
+        <div class="sec-card">
+          <h4><i class="ti ti-file-code" style="font-size:14px"></i> Decoded payload</h4>
+          <div id="jwt-rows"></div>
+        </div>
+        <div class="sec-card">
+          <h4><i class="ti ti-shield" style="font-size:14px"></i> Security measures</h4>
+          <div class="checks-grid">
+            <div class="check-item"><i class="ti ti-check"></i> bcrypt (cost 10)</div>
+            <div class="check-item"><i class="ti ti-check"></i> JWT HS256 · 24 h expiry</div>
+            <div class="check-item"><i class="ti ti-check"></i> Input validation (Zod)</div>
+            <div class="check-item"><i class="ti ti-check"></i> Rate limiting (100/hr)</div>
+            <div class="check-item"><i class="ti ti-check"></i> CORS configured</div>
+            <div class="check-item"><i class="ti ti-check"></i> Helmet.js headers</div>
+          </div>
+        </div>
+        <div class="sec-card">
+          <h4><i class="ti ti-chart-arrows" style="font-size:14px"></i> Scalability note</h4>
+          <div class="scale-note">
+            <p><strong>Microservices:</strong> Auth, Tasks, and Users are decoupled modules — each can be extracted into a standalone service behind an API gateway (e.g. Kong).</p>
+            <p style="margin-top:6px"><strong>Caching:</strong> Redis layer on GET /tasks with 60 s TTL. Cache is invalidated on any mutation.</p>
+            <p style="margin-top:6px"><strong>Load balancing:</strong> Stateless JWT design means any instance handles any request — horizontal scaling with NGINX upstream or AWS ALB is drop-in.</p>
+            <p style="margin-top:6px"><strong>Docker:</strong> Multi-stage Dockerfile + docker-compose with Postgres + Redis services ready.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Users (admin) -->
+      <div class="page" id="page-users">
+        <div class="sec-header"><h3>All users <span style="font-size:12px;color:#888;font-weight:400">(admin only)</span></h3></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Created</th></tr></thead>
+          <tbody id="users-tbody"></tbody>
+        </table></div>
+      </div>
+
+      <!-- Schema (admin) -->
+      <div class="page" id="page-schema">
+        <div class="sec-header"><h3>Database schema <span style="font-size:12px;color:#888;font-weight:400">(PostgreSQL)</span></h3></div>
+        <div class="schema-block">
+          <h4><i class="ti ti-table" style="font-size:14px"></i> users</h4>
+          <pre>id          UUID PRIMARY KEY DEFAULT gen_random_uuid()
+name        VARCHAR(100) NOT NULL
+email       VARCHAR(255) UNIQUE NOT NULL
+password    VARCHAR(255) NOT NULL  -- bcrypt hash
+role        ENUM('user','admin') DEFAULT 'user'
+created_at  TIMESTAMP DEFAULT NOW()
+updated_at  TIMESTAMP DEFAULT NOW()</pre>
+        </div>
+        <div class="schema-block">
+          <h4><i class="ti ti-table" style="font-size:14px"></i> tasks</h4>
+          <pre>id          UUID PRIMARY KEY DEFAULT gen_random_uuid()
+title       VARCHAR(200) NOT NULL
+description TEXT
+status      ENUM('todo','in-progress','done') DEFAULT 'todo'
+priority    ENUM('low','medium','high') DEFAULT 'medium'
+assigned_to UUID REFERENCES users(id) ON DELETE SET NULL
+created_by  UUID REFERENCES users(id) NOT NULL
+created_at  TIMESTAMP DEFAULT NOW()
+updated_at  TIMESTAMP DEFAULT NOW()</pre>
+        </div>
+        <div class="schema-block">
+          <h4><i class="ti ti-table" style="font-size:14px"></i> refresh_tokens</h4>
+          <pre>id          UUID PRIMARY KEY DEFAULT gen_random_uuid()
+user_id     UUID REFERENCES users(id) ON DELETE CASCADE
+token       VARCHAR(512) UNIQUE NOT NULL
+expires_at  TIMESTAMP NOT NULL
+created_at  TIMESTAMP DEFAULT NOW()</pre>
+        </div>
+        <p style="font-size:12px;color:#888;padding:10px 14px;background:#fff;border:1px solid #e4e4df;border-radius:8px">
+          Indexes: <code>users(email)</code> · <code>tasks(assigned_to)</code> · <code>tasks(created_by)</code> · <code>refresh_tokens(token)</code>
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Task Modal -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <h3 id="modal-title">New task</h3>
+    <div class="field"><label>Title</label><input type="text" id="m-title" placeholder="Task title"></div>
+    <div class="field"><label>Description</label><input type="text" id="m-desc" placeholder="Optional description"></div>
+    <div class="field"><label>Priority</label>
+      <select id="m-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select>
+    </div>
+    <div class="field"><label>Status</label>
+      <select id="m-status"><option value="todo" selected>To do</option><option value="in-progress">In progress</option><option value="done">Done</option></select>
+    </div>
+    <div class="alert error" id="m-error"></div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn-add" onclick="saveTask()"><i class="ti ti-device-floppy" style="font-size:13px"></i> Save task</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const S={mode:'login',user:null,token:null,tasks:[],editId:null};
+
+const USERS=[
+  {id:'u1',name:'Admin User',email:'admin@app.dev',password:'Admin123!',role:'admin',created:'2025-01-10'},
+  {id:'u2',name:'Regular User',email:'user@app.dev',password:'User123!',role:'user',created:'2025-02-14'},
+  {id:'u3',name:'Jane Smith',email:'jane@app.dev',password:'Jane123!',role:'user',created:'2025-03-22'},
+];
+
+const SEED=[
+  {id:'t1',title:'Set up CI/CD pipeline',description:'GitHub Actions with Docker',status:'done',priority:'high',assignedTo:'Admin User',createdBy:'u1',created:'2025-05-01'},
+  {id:'t2',title:'Implement rate limiting',description:'Express rate-limit middleware',status:'in-progress',priority:'high',assignedTo:'Regular User',createdBy:'u1',created:'2025-05-03'},
+  {id:'t3',title:'Write API docs',description:'OpenAPI 3.0 spec',status:'in-progress',priority:'medium',assignedTo:'Admin User',createdBy:'u2',created:'2025-05-05'},
+  {id:'t4',title:'Add Redis caching',description:'Cache GET /tasks responses',status:'todo',priority:'medium',assignedTo:'Jane Smith',createdBy:'u1',created:'2025-05-07'},
+  {id:'t5',title:'Unit tests for auth',description:'Jest + Supertest',status:'todo',priority:'low',assignedTo:'Regular User',createdBy:'u2',created:'2025-05-09'},
+];
+
+const ENDPOINTS=[
+  {m:'POST',p:'/auth/register',d:'Register new user',a:false,params:[{n:'name',t:'string',r:true},{n:'email',t:'string',r:true},{n:'password',t:'string',r:true},{n:'role',t:'enum',r:false}],resp:'{"token":"<jwt>","user":{...}}'},
+  {m:'POST',p:'/auth/login',d:'Login & get JWT',a:false,params:[{n:'email',t:'string',r:true},{n:'password',t:'string',r:true}],resp:'{"token":"<jwt>","user":{...}}'},
+  {m:'GET',p:'/auth/me',d:'Get current user',a:true,params:[],resp:'{"id":"...","name":"...","role":"..."}'},
+  {m:'GET',p:'/tasks',d:'List all tasks',a:true,params:[{n:'status',t:'enum',r:false},{n:'priority',t:'enum',r:false},{n:'search',t:'string',r:false}],resp:'[{"id":"...","title":"...","status":"..."}]'},
+  {m:'POST',p:'/tasks',d:'Create task',a:true,params:[{n:'title',t:'string',r:true},{n:'description',t:'string',r:false},{n:'priority',t:'enum',r:false}],resp:'{"id":"...","title":"...","createdAt":"..."}'},
+  {m:'GET',p:'/tasks/:id',d:'Get task by ID',a:true,params:[{n:'id',t:'UUID (path)',r:true}],resp:'{"id":"...","title":"...","description":"..."}'},
+  {m:'PUT',p:'/tasks/:id',d:'Update task',a:true,params:[{n:'id',t:'UUID (path)',r:true},{n:'title',t:'string',r:false},{n:'status',t:'enum',r:false}],resp:'{"id":"...","updated":true}'},
+  {m:'DELETE',p:'/tasks/:id',d:'Delete task',a:'admin',params:[{n:'id',t:'UUID (path)',r:true}],resp:'{"deleted":true}'},
+  {m:'GET',p:'/admin/users',d:'List all users (admin)',a:'admin',params:[],resp:'[{"id":"...","name":"...","role":"..."}]'},
+];
+
+function fakeJWT(u){
+  const h=btoa(JSON.stringify({alg:'HS256',typ:'JWT'})).replace(/=/g,'');
+  const p=btoa(JSON.stringify({sub:u.id,name:u.name,role:u.role,iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+86400})).replace(/=/g,'');
+  const s=btoa('sig_'+u.id+'_secret').replace(/=/g,'').substring(0,28);
+  return `${h}.${p}.${s}`;
+}
+
+function toggleMode(){
+  S.mode=S.mode==='login'?'register':'login';
+  const r=S.mode==='register';
+  document.getElementById('auth-title').textContent=r?'Create account':'Sign in';
+  document.getElementById('auth-subtitle').textContent=r?'All fields required — passwords hashed with bcrypt':'JWT-secured authentication · API v1';
+  document.getElementById('auth-btn').textContent=r?'Create account':'Sign in';
+  document.getElementById('toggle-text').textContent=r?'Already have an account? Sign in':"Don't have an account? Register";
+  document.getElementById('field-name').style.display=r?'block':'none';
+  document.getElementById('field-role').style.display=r?'block':'none';
+  clearAlerts();
+}
+
+function clearAlerts(){
+  ['auth-error','auth-success','m-error'].forEach(id=>{const e=document.getElementById(id);if(e){e.style.display='none';e.textContent=''}});
+}
+function showAlert(id,msg,type='error'){const e=document.getElementById(id);e.textContent=msg;e.className='alert '+type;e.style.display='block';}
+
+function handleAuth(){
+  clearAlerts();
+  const email=document.getElementById('auth-email').value.trim();
+  const pw=document.getElementById('auth-password').value;
+  if(!email||!pw){showAlert('auth-error','Email and password are required.');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showAlert('auth-error','Enter a valid email address.');return;}
+  if(S.mode==='login'){
+    const u=USERS.find(x=>x.email===email&&x.password===pw);
+    if(!u){showAlert('auth-error','Invalid credentials. Check email and password.');return;}
+    doLogin(u);
+  } else {
+    const name=document.getElementById('reg-name').value.trim();
+    const role=document.getElementById('reg-role').value;
+    if(!name){showAlert('auth-error','Please enter your full name.');return;}
+    if(pw.length<8){showAlert('auth-error','Password must be at least 8 characters.');return;}
+    if(USERS.find(x=>x.email===email)){showAlert('auth-error','An account with this email already exists.');return;}
+    showAlert('auth-success','Account created! Signing you in…','success');
+    const nu={id:'u'+Date.now(),name,email,password:pw,role,created:new Date().toISOString().slice(0,10)};
+    USERS.push(nu);
+    setTimeout(()=>doLogin(nu),800);
+  }
+}
+
+function quickLogin(email,pw){
+  document.getElementById('auth-email').value=email;
+  document.getElementById('auth-password').value=pw;
+  if(S.mode!=='login'){S.mode='login';toggleMode();S.mode='login';}
+  handleAuth();
+}
+
+function doLogin(u){
+  S.user=u;S.token=fakeJWT(u);S.tasks=JSON.parse(JSON.stringify(SEED));
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').classList.add('active');
+  document.getElementById('topbar-name').textContent=u.name;
+  const rb=document.getElementById('topbar-role');rb.textContent=u.role;rb.className='role-badge '+u.role;
+  if(u.role==='admin'){
+    document.getElementById('adm-section').style.display='block';
+    document.getElementById('adm-users-nav').style.display='flex';
+    document.getElementById('adm-schema-nav').style.display='flex';
+  }
+  refreshStats();renderTasks();renderRecent();renderUsers();renderApiDocs();renderJWT();
+  toast('Signed in as '+u.name);
+}
+
+function logout(){
+  S.user=null;S.token=null;S.tasks=[];
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('adm-section').style.display='none';
+  document.getElementById('adm-users-nav').style.display='none';
+  document.getElementById('adm-schema-nav').style.display='none';
+  document.getElementById('auth-email').value='';
+  document.getElementById('auth-password').value='';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-overview').classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelector('.nav-item').classList.add('active');
+  toast('Signed out successfully');
+}
+
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el)el.classList.add('active');
+}
+
+function refreshStats(){
+  const t=S.tasks;
+  document.getElementById('st-total').textContent=t.length;
+  document.getElementById('st-done').textContent=t.filter(x=>x.status==='done').length;
+  document.getElementById('st-prog').textContent=t.filter(x=>x.status==='in-progress').length;
+  document.getElementById('st-users').textContent=USERS.length;
+}
+
+function pbadge(p){return`<span class="priority-badge p-${p}">${p}</span>`;}
+function sdot(s){const c=s==='done'?'s-done':s==='in-progress'?'s-prog':'s-todo';const l=s==='done'?'Done':s==='in-progress'?'In progress':'To do';return`<span class="status-dot ${c}"></span>${l}`;}
+
+function renderRecent(){
+  document.getElementById('recent-tbody').innerHTML=S.tasks.slice(0,4).map(t=>`<tr>
+    <td style="font-weight:500">${t.title}</td>
+    <td>${pbadge(t.priority)}</td>
+    <td style="font-size:13px">${sdot(t.status)}</td>
+    <td style="color:#888;font-size:12px">${t.assignedTo}</td>
+  </tr>`).join('');
+}
+
+function renderTasks(){
+  const q=(document.getElementById('search').value||'').toLowerCase();
+  const sf=document.getElementById('f-status').value;
+  const pf=document.getElementById('f-priority').value;
+  const filtered=S.tasks.filter(t=>{
+    if(q&&!t.title.toLowerCase().includes(q))return false;
+    if(sf&&t.status!==sf)return false;
+    if(pf&&t.priority!==pf)return false;
+    return true;
+  });
+  document.getElementById('task-count').textContent=`(${filtered.length})`;
+  const isAdmin=S.user&&S.user.role==='admin';
+  document.getElementById('tasks-tbody').innerHTML=filtered.map(t=>`<tr>
+    <td><div style="font-weight:500">${t.title}</div><div style="font-size:11px;color:#aaa">${t.description||''}</div></td>
+    <td>${pbadge(t.priority)}</td>
+    <td style="font-size:13px">${sdot(t.status)}</td>
+    <td style="font-size:12px;color:#888">${t.assignedTo}</td>
+    <td style="font-size:12px;color:#aaa">${t.created}</td>
+    <td><div class="action-btns">
+      <button class="btn-icon" onclick="openEdit('${t.id}')" title="Edit"><i class="ti ti-edit"></i></button>
+      ${isAdmin?`<button class="btn-icon del" onclick="delTask('${t.id}')" title="Delete"><i class="ti ti-trash"></i></button>`:''}
+    </div></td>
+  </tr>`).join('');
+}
+
+function renderUsers(){
+  document.getElementById('users-tbody').innerHTML=USERS.map(u=>`<tr>
+    <td style="font-size:11px;font-family:var(--mono);color:#aaa">${u.id}</td>
+    <td style="font-weight:500">${u.name}</td>
+    <td style="color:#888">${u.email}</td>
+    <td><span class="role-badge ${u.role}">${u.role}</span></td>
+    <td style="font-size:12px;color:#aaa">${u.created}</td>
+  </tr>`).join('');
+}
+
+function renderApiDocs(){
+  const mc={GET:'m-get',POST:'m-post',PUT:'m-put',DELETE:'m-delete'};
+  document.getElementById('api-list').innerHTML=ENDPOINTS.map((ep,i)=>`
+    <div class="api-card">
+      <div class="api-hdr" onclick="toggleApi(${i})">
+        <span class="method ${mc[ep.m]||'m-get'}">${ep.m}</span>
+        <span class="api-path">/api/v1${ep.p}</span>
+        <span class="api-desc">${ep.d}</span>
+        ${ep.a?`<span class="auth-chip">${ep.a==='admin'?'🔒 admin':'🔑 auth'}</span>`:''}
+      </div>
+      <div class="api-body" id="ab-${i}">
+        ${ep.params.length?`<div style="margin-top:10px">
+          <p style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#aaa;margin-bottom:4px">Parameters</p>
+          ${ep.params.map(p=>`<div class="param-row"><span class="param-name">${p.n}</span><span class="param-type">${p.t}</span><span style="color:#aaa">${p.r?'required':'optional'}</span></div>`).join('')}
+        </div>`:''}
+        <p style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#aaa;margin-top:10px;margin-bottom:2px">Response 200</p>
+        <pre>${ep.resp}</pre>
+      </div>
+    </div>`).join('');
+}
+
+function toggleApi(i){document.getElementById('ab-'+i).classList.toggle('open');}
+
+function renderJWT(){
+  const t=S.token||'';const pts=t.split('.');
+  document.getElementById('token-display').innerHTML=`<span class="tp-h">${pts[0]||''}</span>.<span class="tp-p">${pts[1]||''}</span>.<span class="tp-s">${pts[2]||''}`;
+  if(pts[1]){try{
+    const pl=JSON.parse(atob(pts[1]+'=='));
+    document.getElementById('jwt-rows').innerHTML=Object.entries(pl).map(([k,v])=>`<div class="info-row"><span class="info-key">${k}</span><span style="font-family:var(--mono);font-size:12px">${k==='exp'||k==='iat'?new Date(v*1000).toLocaleString():v}</span></div>`).join('');
+  }catch(e){}}
+}
+
+function openCreate(){
+  S.editId=null;
+  document.getElementById('modal-title').textContent='New task';
+  ['m-title','m-desc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('m-priority').value='medium';
+  document.getElementById('m-status').value='todo';
+  clearAlerts();
+  document.getElementById('task-modal').classList.add('open');
+}
+
+function openEdit(id){
+  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  S.editId=id;
+  document.getElementById('modal-title').textContent='Edit task';
+  document.getElementById('m-title').value=t.title;
+  document.getElementById('m-desc').value=t.description||'';
+  document.getElementById('m-priority').value=t.priority;
+  document.getElementById('m-status').value=t.status;
+  clearAlerts();
+  document.getElementById('task-modal').classList.add('open');
+}
+
+function closeModal(){document.getElementById('task-modal').classList.remove('open');}
+
+function saveTask(){
+  const title=document.getElementById('m-title').value.trim();
+  if(!title){showAlert('m-error','Task title is required.');return;}
+  const priority=document.getElementById('m-priority').value;
+  const status=document.getElementById('m-status').value;
+  const desc=document.getElementById('m-desc').value.trim();
+  if(S.editId){
+    const t=S.tasks.find(x=>x.id===S.editId);
+    if(t){t.title=title;t.description=desc;t.priority=priority;t.status=status;}
+    toast('Task updated · PUT /api/v1/tasks/'+S.editId);
+  } else {
+    S.tasks.unshift({id:'t'+Date.now(),title,description:desc,status,priority,assignedTo:S.user.name,createdBy:S.user.id,created:new Date().toISOString().slice(0,10)});
+    toast('Task created · POST /api/v1/tasks');
+  }
+  closeModal();refreshStats();renderTasks();renderRecent();
+}
+
+function delTask(id){
+  S.tasks=S.tasks.filter(t=>t.id!==id);
+  refreshStats();renderTasks();renderRecent();
+  toast('Task deleted · DELETE /api/v1/tasks/'+id);
+}
+
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2600);
+}
+
+document.getElementById('task-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+</script>
+</body>
+</html>
